@@ -3,7 +3,8 @@
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
 index = {"sparse_mask": "00_core.ipynb",
-         "masked_params": "00_core.ipynb",
+         "sparse_mask_like": "00_core.ipynb",
+         "sparse_params": "00_core.ipynb",
          "apply_masks": "00_core.ipynb",
          "is_sparseable_module": "00_core.ipynb",
          "sparseable_modules": "00_core.ipynb",

@@ -82,7 +82,7 @@ def erdos_renyi_sparsity(params, model_sparsity, include_kernel=True, erk_power_
     Returns a list of sparsities in the same order as params. Sparsities satisfy
     the Erdos-Renyi(Kernel) distribution, where the model has a total parameter count
     as one with uniform sparsities, that is, satisfying the following equation:
-    # eps * (p_1 * N_1 + p_2 * N_2) = (1 - model_sparsity) * (N_1 + N_2), for some float `eps`.
+    $ eps * (p_1 * N_1 + p_2 * N_2) = (1 - model_sparsity) * (N_1 + N_2) $, for some float `eps`.
 
     Args:
     params: list of all sparseable parameters
@@ -209,20 +209,10 @@ def top_k_mask(t, n_keep):
 
 # Cell
 class DynamicSparseTrainingCallback(Callback):
-    toward_end,run_after = True,GradientAccumulation
-
+    '''Dynamically updates the network connectivity during training.'''
     def __init__(self, sparse_modules=None,
                  batches_per_update=None, initial_drop_grow_pct=0.3, stop_pct=0.75,
                  keep_score_f=weight_magnitude, grow_score_f=gradient_magnitude):
-        '''
-        Args:
-        module_sparsity_map: dictionary mapping modules to sparsity values
-        batches_per_update: # of batches per update, None (default) updates at end of each training epoch
-        initial_drop_grow_pct: percentage of weights to change during each dynamic weight update
-        stop_pct: stop dynamic weight updates after `stop_pct` of training
-        keep_score_f: function scoring each weight, top n are kept and the rest are zeroed
-        grow_score_f: function scoring each weight, top n excl. kept weights are unmasked and initialized to zero
-        '''
         store_attr('initial_drop_grow_pct,stop_pct,keep_score_f,grow_score_f,batches_per_update')
         self.modules = sparse_modules
 
@@ -283,7 +273,14 @@ class DynamicSparseTrainingCallback(Callback):
         if 'grad_avg' in state: state['grad_avg'].mul_(mask)
         if 'sqr_avg' in state: state['sqr_avg'].mul_(mask)
 
-    _docs = dict(before_fit="Schedule the number of connections to drop & grow per update.",
+    _docs = dict(__init__='''Args:
+    module_sparsity_map: dictionary mapping modules to sparsity values
+    batches_per_update: # of batches per update, None (default) updates at end of each training epoch
+    initial_drop_grow_pct: percentage of weights to change during each dynamic weight update
+    stop_pct: stop dynamic weight updates after `stop_pct` of training
+    keep_score_f: function scoring each weight, top n are kept and the rest are zeroed
+    grow_score_f: function scoring each weight, top n excl. kept weights are unmasked and initialized to zero''',
+                 before_fit="Schedule the number of connections to drop & grow per update.",
                  before_batch="Add dynamic update hooks.",
                  after_backward="Remove dynamic update hooks and skip gradient update.",
                  step="Update self.is_update_step and self.drop_grow_pct.",

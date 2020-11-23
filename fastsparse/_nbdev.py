@@ -4,6 +4,7 @@ __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
 index = {"sparse_mask": "00_core.ipynb",
          "sparse_mask_like": "00_core.ipynb",
+         "maybe_float": "00_core.ipynb",
          "sparse_params": "00_core.ipynb",
          "apply_masks": "00_core.ipynb",
          "is_sparseable_module": "00_core.ipynb",
@@ -17,9 +18,9 @@ index = {"sparse_mask": "00_core.ipynb",
          "gradient_momentum": "00_core.ipynb",
          "top_k_mask": "00_core.ipynb",
          "DynamicSparseTrainingCallback": "00_core.ipynb",
-         "SET_kwargs": "00_core.ipynb",
-         "STFS_kwargs": "00_core.ipynb",
-         "RigL_kwargs": "00_core.ipynb"}
+         "SET_presets": "00_core.ipynb",
+         "SNFS_presets": "00_core.ipynb",
+         "RigL_presets": "00_core.ipynb"}
 
 modules = ["core.py"]
 

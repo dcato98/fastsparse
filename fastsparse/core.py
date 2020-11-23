@@ -2,8 +2,8 @@
 
 __all__ = ['sparse_mask', 'sparse_mask_like', 'maybe_float', 'sparse_params', 'apply_masks', 'is_sparseable_module',
            'sparseable_modules', 'uniform_sparsity', 'first_layer_dense_uniform', 'erdos_renyi_sparsity',
-           'sparsify_model', 'weight_magnitude', 'gradient_magnitude', 'gradient_momentum', 'top_k_mask',
-           'DynamicSparseTrainingCallback', 'SET_presets', 'SNFS_presets', 'RigL_presets']
+           'sparsify_model', 'random_score', 'weight_magnitude', 'gradient_magnitude', 'gradient_momentum',
+           'top_k_mask', 'DynamicSparseTrainingCallback', 'SET_presets', 'SNFS_presets', 'RigL_presets']
 
 # Cell
 import numpy as np
@@ -173,6 +173,9 @@ def sparsify_model(model, model_sparsity, sparse_f=uniform_sparsity, enforce_mas
     return hooks
 
 # Cell
+def random_score(p, **kwargs): return torch.rand_like(p)
+
+# Cell
 def weight_magnitude(p, **kwargs): return p.data.abs()
 
 # Cell
@@ -280,12 +283,12 @@ class DynamicSparseTrainingCallback(Callback):
         if 'grad_avg' in state: state['grad_avg'].mul_(mask)
         if 'sqr_avg' in state: state['sqr_avg'].mul_(mask)
 
-    _docs = dict(before_fit="Schedule the number of connections to drop & grow per update",
-                 before_batch="Add dynamic update hooks",
-                 after_backward="Remove dynamic update hooks and cancel batch",
-                 step="Update self.is_update_step and self.drop_grow_pct",
-                 rewire_module="Update step for one module",
-                 reset_momentum="Initialize momentum to zero for newly-added connections")
+    _docs = dict(before_fit="Schedule the number of connections to drop & grow per update.",
+                 before_batch="Add dynamic update hooks.",
+                 after_backward="Remove dynamic update hooks and skip gradient update.",
+                 step="Update self.is_update_step and self.drop_grow_pct.",
+                 rewire_module="Update step for one module.",
+                 reset_momentum="Initialize momentum to zero for newly-added connections.")
 
 # Cell
 SET_presets = {'keep_score_f': weight_magnitude, 'grow_score_f': random_score,

@@ -31,25 +31,19 @@ nb_path: "index.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Warning:-this-repo-is-undergoing-active-development"><em>Warning: this repo is undergoing active development</em><a class="anchor-link" href="#Warning:-this-repo-is-undergoing-active-development"> </a></h2><p>TODOs:</p>
-<ul>
-<li>test dynamic training callback</li>
-<li>finish documenting this page<ul>
-<li>PyTorch example</li>
-<li>under-the-hood explanation</li>
-<li>fully custom example</li>
-<li>Drop/Redist/Grow criterion</li>
-</ul>
-</li>
-<li>implement distributed training (?)</li>
-</ul>
-
+<h2 id="Warning:-this-repo-is-undergoing-active-development"><em>Warning: this repo is undergoing active development</em><a class="anchor-link" href="#Warning:-this-repo-is-undergoing-active-development"> </a></h2>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Install">Install<a class="anchor-link" href="#Install"> </a></h2>
+<h2 id="Getting-Started">Getting Started<a class="anchor-link" href="#Getting-Started"> </a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Install">Install<a class="anchor-link" href="#Install"> </a></h3>
 </div>
 </div>
 </div>
@@ -62,31 +56,80 @@ nb_path: "index.ipynb"
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="How-to-use">How to use<a class="anchor-link" href="#How-to-use"> </a></h2>
+<h3 id="Sparse-Algorithms">Sparse Algorithms<a class="anchor-link" href="#Sparse-Algorithms"> </a></h3><p>This network implements the following sparse algorithms:</p>
+<table>
+<thead><tr>
+<th style="text-align:left">Abbr.</th>
+<th style="text-align:left">Sparse Algorithm</th>
+<th style="text-align:left">in FastSparse</th>
+<th style="text-align:left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left">static sparsity baseline</td>
+<td style="text-align:left">omit <a href="/fastsparse/core.html#DynamicSparseTrainingCallback"><code>DynamicSparseTrainingCallback</code></a></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td style="text-align:left">SET</td>
+<td style="text-align:left"><a href="https://arxiv.org/abs/1901.09181">Sparse Evolutionary Training</a> (Jan 2019)</td>
+<td style="text-align:left"><code>DynamicSparseTrainingCallback(**SET_presets)</code></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td style="text-align:left">SNFS</td>
+<td style="text-align:left"><a href="https://arxiv.org/abs/1907.04840">Sparse Networks From Scratch</a> (Jul 2019)</td>
+<td style="text-align:left"><code>DynamicSparseTrainingCallback(**SNFS_presets)</code></td>
+<td style="text-align:left">redistribution not implemented*</td>
+</tr>
+<tr>
+<td style="text-align:left">RigL</td>
+<td style="text-align:left"><a href="https://arxiv.org/abs/1911.11134">Rigged Lottery</a> (Nov 2019)</td>
+<td style="text-align:left"><code>DynamicSparseTrainingCallback(**RigL_presets)</code></td>
+</tr>
+</tbody>
+</table>
+<p>*Authors of the RigL paper demonstrate that using SNFS + Erdos-Renyi-Kernel distribution - redistribution outperforms SNFS + uniform sparsity + redistribution (at least on the measured benchmarks).</p>
+
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Fastai-example">Fastai example<a class="anchor-link" href="#Fastai-example"> </a></h3>
+<h3 id="Fastai-demo">Fastai demo<a class="anchor-link" href="#Fastai-demo"> </a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>With this package, you can train your model using the latest dynamic sparse training techniques. It only takes 4 additional lines of code!</p>
-<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">fastai.vision.all</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">fastsparse.core</span> <span class="kn">import</span> <span class="o">*</span>                            <span class="c1"># &lt;-- import this package</span>
+<p>With just 4 additional lines of code, you can train your model using the latest dynamic sparse training techniques. This example achieves &gt;99% accuracy on MNIST using a ResNet34 with only 1% of the weights.</p>
+<div class="highlight"><pre><span></span><span class="c1"># (0) install the library</span>
+<span class="c1"># ! pip install fastsparse </span>
+
+<span class="kn">from</span> <span class="nn">fastai.vision.all</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1"># (1) import this package</span>
+<span class="kn">import</span> <span class="nn">fastsparse</span> <span class="k">as</span> <span class="nn">sparse</span>
 
 <span class="n">path</span> <span class="o">=</span> <span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">MNIST</span><span class="p">)</span>
 <span class="n">dls</span> <span class="o">=</span> <span class="n">ImageDataLoaders</span><span class="o">.</span><span class="n">from_folder</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;training&#39;</span><span class="p">,</span> <span class="s1">&#39;testing&#39;</span><span class="p">)</span>
 <span class="n">learn</span> <span class="o">=</span> <span class="n">cnn_learner</span><span class="p">(</span><span class="n">dls</span><span class="p">,</span> <span class="n">resnet34</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">error_rate</span><span class="p">,</span> <span class="n">pretrained</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">sparse_hooks</span> <span class="o">=</span> <span class="n">sparsify_model</span><span class="p">(</span><span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">sparsity</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span> <span class="c1"># &lt;-- initial sparsity + enforce masks</span>
-<span class="n">cbs</span> <span class="o">=</span> <span class="n">DynamicSparseTrainingCallback</span><span class="p">(</span><span class="o">**</span><span class="n">RigL_kwargs</span><span class="p">)</span>       <span class="c1"># &lt;-- dynamic mask updates</span>
 
-<span class="n">learn</span><span class="o">.</span><span class="n">fit_one_cycle</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">cbs</span><span class="o">=</span><span class="n">cbs</span><span class="p">)</span>
+<span class="c1"># (2) sparsify initial model + enforce masks</span>
+<span class="n">sparse_hooks</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">sparsify_model</span><span class="p">(</span><span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> 
+                                     <span class="n">model_sparsity</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span>
+                                     <span class="n">sparse_f</span><span class="o">=</span><span class="n">sparse</span><span class="o">.</span><span class="n">erdos_renyi_sparsity</span><span class="p">)</span>
 
-<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">sparse_hooks</span><span class="p">:</span> <span class="n">h</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>                        <span class="c1"># &lt;-- stop enforcing masks</span>
+<span class="c1"># (3) schedule dynamic mask updates</span>
+<span class="n">cbs</span> <span class="o">=</span> <span class="p">[</span><span class="n">sparse</span><span class="o">.</span><span class="n">DynamicSparseTrainingCallback</span><span class="p">(</span><span class="o">**</span><span class="n">sparse</span><span class="o">.</span><span class="n">SNFS_presets</span><span class="p">,</span> 
+                                            <span class="n">batches_per_update</span><span class="o">=</span><span class="mi">32</span><span class="p">)]</span>
+
+<span class="n">learn</span><span class="o">.</span><span class="n">fit_one_cycle</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">cbs</span><span class="o">=</span><span class="n">cbs</span><span class="p">)</span>
+
+<span class="c1"># (4) remove hooks that enforce masks</span>
+<span class="n">sparse_hooks</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
 </pre></div>
 <p>Simply omit the <a href="/fastsparse/core.html#DynamicSparseTrainingCallback"><code>DynamicSparseTrainingCallback</code></a> to train a fixed-sparsity model as a baseline.</p>
 
@@ -95,46 +138,44 @@ nb_path: "index.ipynb"
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="PyTorch-example">PyTorch example<a class="anchor-link" href="#PyTorch-example"> </a></h3><p>TODO</p>
+<h3 id="PyTorch-demo-(not-implemented-yet)">PyTorch demo (<em>not implemented yet</em>)<a class="anchor-link" href="#PyTorch-demo-(not-implemented-yet)"> </a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torchvision</span> <span class="kn">import</span> <span class="n">models</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">model</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">opt</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">opt</span> <span class="o">=</span> <span class="n">DynamicSparseTrainingOptimizerWrapper</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="o">**</span><span class="n">RigL_kwargs</span><span class="p">)</span>
+
+<span class="c1">### Modified training step</span>
+<span class="c1"># sparse_opt.step(...) will determine whether to:</span>
+<span class="c1">#  (A) take a regular opt step, or</span>
+<span class="c1">#  (B) update network connectivity</span>
+<span class="k">def</span> <span class="nf">sparse_train_step</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">xb</span><span class="p">,</span> <span class="n">yb</span><span class="p">,</span> <span class="n">loss_func</span><span class="p">,</span> <span class="n">sparse_opt</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pct_train</span><span class="p">):</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">xb</span><span class="p">)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_func</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">yb</span><span class="p">)</span>
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">sparse_opt</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">pct_train</span><span class="p">)</span>
+    <span class="n">sparse_opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+</pre></div>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Training-with-Large-Batch-Sizes">Training with Large Batch Sizes<a class="anchor-link" href="#Training-with-Large-Batch-Sizes"> </a></h3><p>Authors of the Rigged Lottery paper hypothesize that the effectiveness of using the gradient magnitude for determining which connections to grow is partly due to their large batch size (4096 for ImageNet). Those without access to multi-gpu clusters can achieve effective batch sizes of this size by using fastai's <code>GradientAccumulation</code> callback, which has been tested to be compatible with this package's <a href="/fastsparse/core.html#DynamicSparseTrainingCallback"><code>DynamicSparseTrainingCallback</code></a>.</p>
-
+<h3 id="Save/Reload-demo">Save/Reload demo<a class="anchor-link" href="#Save/Reload-demo"> </a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Under-The-Hood">Under-The-Hood<a class="anchor-link" href="#Under-The-Hood"> </a></h2>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Here's what's going on.</p>
-<p>When you run <code>sparsify_model(learn.model, 0.9)</code>, this adds sparse masks and add pre_forward hooks to enforce masks on weights during forward pass.</p>
-<blockquote><p>By default, a uniform sparsity distribution is used. Change the sparsity distribution to Erdos-Renyi with <code>sparsify_model(learn.model, 0.9, sparse_init_f=erdos_renyi)</code>, or pass in your custom function (see <a href="#Customization">Customization</a></p>
-<p>To avoid adding pre_forward hooks, use <code>sparsify_model(learn.model, 0.9, enforce_masks=False)</code>.</p>
-</blockquote>
-<p>When you add the <a href="/fastsparse/core.html#DynamicSparseTrainingCallback"><code>DynamicSparseTrainingCallback</code></a> callback, ... TODO complete section</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Customization">Customization<a class="anchor-link" href="#Customization"> </a></h2><p>There are several places to modify the behavior of fastsparse to accomplish custom behaviors. For an example, check out the implementation of RigL.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="1.-Initial-sparsity-distribution:">1. Initial sparsity distribution:<a class="anchor-link" href="#1.-Initial-sparsity-distribution:"> </a></h3><p>Define your own initial sparsity distribution by setting <code>sparsify_method</code> in <a href="/fastsparse/core.html#sparsify_model"><code>sparsify_model</code></a> to a custom function. For example, this function (included in library) makes the first layer dense, and all following layers to a fixed sparsity.</p>
+<p>Here is an example of saving a model and reloading it to resume training.</p>
 
 </div>
 </div>
@@ -146,12 +187,154 @@ nb_path: "index.ipynb"
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">first_layer_dense_uniform</span><span class="p">(</span><span class="n">params</span><span class="p">:</span><span class="nb">list</span><span class="p">,</span> <span class="n">model_sparsity</span><span class="p">:</span><span class="nb">float</span><span class="p">):</span>
-    <span class="n">sparsities</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">model_sparsity</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">sparsities</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">fastai.vision.all</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">fastsparse</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">path</span> <span class="o">=</span> <span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">MNIST_TINY</span><span class="p">)</span>
+<span class="n">dls</span> <span class="o">=</span> <span class="n">ImageDataLoaders</span><span class="o">.</span><span class="n">from_folder</span><span class="p">(</span><span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">MNIST_TINY</span><span class="p">))</span>
+<span class="n">learn</span> <span class="o">=</span> <span class="n">cnn_learner</span><span class="p">(</span><span class="n">dls</span><span class="p">,</span> <span class="n">resnet18</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">accuracy</span><span class="p">,</span> <span class="n">pretrained</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sparse_hooks</span> <span class="o">=</span> <span class="n">sparsify_model</span><span class="p">(</span><span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">model_sparsity</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">sparse_f</span><span class="o">=</span><span class="n">erdos_renyi_sparsity</span><span class="p">)</span>
+<span class="n">dst_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">SNFS_presets</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;batches_per_update&#39;</span><span class="p">:</span> <span class="mi">8</span><span class="p">}}</span>
+<span class="n">cbs</span> <span class="o">=</span> <span class="n">DynamicSparseTrainingCallback</span><span class="p">(</span><span class="o">**</span><span class="n">dst_kwargs</span><span class="p">)</span>
+
+<span class="n">learn</span><span class="o">.</span><span class="n">fit_flat_cos</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">cbs</span><span class="o">=</span><span class="n">cbs</span><span class="p">)</span>
+
+<span class="c1"># (0) save model as usual (masks are stored automatically)</span>
+<span class="n">save_model</span><span class="p">(</span><span class="s1">&#39;sparse_tiny_mnist&#39;</span><span class="p">,</span> <span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">learn</span><span class="o">.</span><span class="n">opt</span><span class="p">)</span>
 </pre></div>
 
     </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: left;">
+      <th>epoch</th>
+      <th>train_loss</th>
+      <th>valid_loss</th>
+      <th>accuracy</th>
+      <th>time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>0.482798</td>
+      <td>0.698934</td>
+      <td>0.505007</td>
+      <td>00:02</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>0.302442</td>
+      <td>0.656283</td>
+      <td>0.512160</td>
+      <td>00:01</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>0.238623</td>
+      <td>0.175693</td>
+      <td>0.935622</td>
+      <td>00:02</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>0.203908</td>
+      <td>0.028619</td>
+      <td>0.992847</td>
+      <td>00:02</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>0.162143</td>
+      <td>0.033945</td>
+      <td>0.989986</td>
+      <td>00:02</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># (1) then recreate learner as usual</span>
+
+<span class="kn">from</span> <span class="nn">fastai.vision.all</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">fastsparse</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">path</span> <span class="o">=</span> <span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">MNIST_TINY</span><span class="p">)</span>
+<span class="n">dls</span> <span class="o">=</span> <span class="n">ImageDataLoaders</span><span class="o">.</span><span class="n">from_folder</span><span class="p">(</span><span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">MNIST_TINY</span><span class="p">))</span>
+<span class="n">learn</span> <span class="o">=</span> <span class="n">cnn_learner</span><span class="p">(</span><span class="n">dls</span><span class="p">,</span> <span class="n">resnet18</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">accuracy</span><span class="p">,</span> <span class="n">pretrained</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># (2) re-sparsify model (this adds the masks to the parameters)</span>
+<span class="n">sparse_hooks</span> <span class="o">=</span> <span class="n">sparsify_model</span><span class="p">(</span><span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">model_sparsity</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">sparse_f</span><span class="o">=</span><span class="n">erdos_renyi_sparsity</span><span class="p">)</span> <span class="c1"># &lt;-- initial sparsity + enforce masks</span>
+
+<span class="c1"># (3) load model as usual</span>
+<span class="n">load_model</span><span class="p">(</span><span class="s1">&#39;sparse_tiny_mnist&#39;</span><span class="p">,</span> <span class="n">learn</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">learn</span><span class="o">.</span><span class="n">opt</span><span class="p">)</span>
+
+<span class="c1"># (5) check validation loss &amp; accuracy to verify we&#39;ve loaded it successfully</span>
+<span class="n">val_loss</span><span class="p">,</span> <span class="n">val_acc</span> <span class="o">=</span> <span class="n">learn</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;validation loss: </span><span class="si">{</span><span class="n">val_loss</span><span class="si">}</span><span class="s1">, validation accuracy: </span><span class="si">{</span><span class="n">val_acc</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+<span class="c1"># (4) optionally, continue training; otherwise remove sparsity-preserving hooks</span>
+<span class="n">sparse_hooks</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>/home/dc/anaconda3/envs/fastai/lib/python3.8/site-packages/fastai/learner.py:53: UserWarning: Could not load the optimizer state.
+  if with_opt: warn(&#34;Could not load the optimizer state.&#34;)
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea ">
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>validation loss: 0.033944640308618546, validation accuracy: 0.9899857044219971
+</pre>
+</div>
+</div>
+
 </div>
 </div>
 
@@ -160,39 +343,131 @@ nb_path: "index.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="2.-Drop-Criterion">2. Drop Criterion<a class="anchor-link" href="#2.-Drop-Criterion"> </a></h3>
+<h3 id="Training-with-Large-Batch-Sizes">Training with Large Batch Sizes<a class="anchor-link" href="#Training-with-Large-Batch-Sizes"> </a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>...</p>
+<p>Authors of the Rigged Lottery paper hypothesize that the effectiveness of using the gradient magnitude for determining which connections to grow is partly due to their large batch size (4096 for ImageNet). Those without access to multi-gpu clusters can achieve effective batch sizes of this size by using fastai's <code>GradientAccumulation</code> callback, which has been tested to be compatible with this package's <a href="/fastsparse/core.html#DynamicSparseTrainingCallback"><code>DynamicSparseTrainingCallback</code></a>.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="3.-Redistribute-Criterion">3. Redistribute Criterion<a class="anchor-link" href="#3.-Redistribute-Criterion"> </a></h3>
+<h3 id="Training-with-Small-#-of-Epochs">Training with Small # of Epochs<a class="anchor-link" href="#Training-with-Small-#-of-Epochs"> </a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>...</p>
+<p>Dynamic sparse training algorithms work by modifying the network connectivity during training, dropping some weights and allowing others to regrow. By default, network connectivity is modified at the end of each epoch. When training with few epochs, however, there will be few chances to explore which weights to connect. To update more frequently, in <a href="/fastsparse/core.html#DynamicSparseTrainingCallback"><code>DynamicSparseTrainingCallback</code></a>, set <code>batches_per_update</code> to a smaller # of batches than occur in one training epoch. Varying the number of batches per update trades off the frequency of updates with stability in making good updates.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="4.-Grow-Criterion">4. Grow Criterion<a class="anchor-link" href="#4.-Grow-Criterion"> </a></h3>
+<h2 id="Customization">Customization<a class="anchor-link" href="#Customization"> </a></h2><p>There are many ways to implement and test your own dynamic sparse algorithms using FastSparse.</p>
+
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>...</p>
+<h3 id="Custom-Initial-Sparsity-Distribution:">Custom Initial Sparsity Distribution:<a class="anchor-link" href="#Custom-Initial-Sparsity-Distribution:"> </a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Define your own initial sparsity distribution by setting <code>sparsify_method</code> in <a href="/fastsparse/core.html#sparsify_model"><code>sparsify_model</code></a> to a custom function. For example, this function (included in library) will keep the first layer dense and set the remaining layers to a fixed sparsity.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">first_layer_dense_uniform</span><span class="p">(</span><span class="n">params</span><span class="p">:</span><span class="nb">list</span><span class="p">,</span> <span class="n">model_sparsity</span><span class="p">:</span><span class="nb">float</span><span class="p">):</span>
+    <span class="n">sparsities</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">model_sparsity</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sparsities</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Custom-Drop-Criterion">Custom Drop Criterion<a class="anchor-link" href="#Custom-Drop-Criterion"> </a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>While published papers like SNFS and RigL refer to 'drop criterion', this library implements the reverse, a 'keep criterion'. This is a function that returns a score for each weight, where the largest <code>M</code> scores will be and <code>M</code> is determined by the decay schedule. For example, both Sparse Networks From Scratch and Rigged Lottery both use the magnitude of the weights (in FastSparse: <a href="/fastsparse/core.html#weight_magnitude"><code>weight_magnitude</code></a>).</p>
+<p>This can easily be customized in FastSparse by defining your own keep score function:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">custom_keep_scoring_function</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">opt</span><span class="p">):</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="o">...</span>
+    <span class="k">assert</span> <span class="n">param</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">score</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">return</span> <span class="n">score</span>
+</pre></div>
+<p>Then pass your custom function into the sparse training callback:</p>
+<div class="highlight"><pre><span></span><span class="n">DynamicSparseTrainingCallback</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">keep_score_f</span><span class="o">=</span><span class="n">custom_keep_scoring_function</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Custom-Grow-Criterion">Custom Grow Criterion<a class="anchor-link" href="#Custom-Grow-Criterion"> </a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The grow criterion is a function that returns a score for each weight, where the largest <code>N</code> scores will be and <code>N</code> is determined by the decay schedule. For example, Sparse Networks From Scrath grows weights according to the momentum of the gradient, while Rigged Lottery uses the magnitude of the gradient (in FastSparse, <a href="/fastsparse/core.html#gradient_momentum"><code>gradient_momentum</code></a> and <a href="/fastsparse/core.html#gradient_magnitude"><code>gradient_magnitude</code></a> respectively).</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">custom_grow_scoring_function</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">opt</span><span class="p">):</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="o">...</span>
+    <span class="k">assert</span> <span class="n">param</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">score</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">return</span> <span class="n">score</span>
+</pre></div>
+<p>Then pass your custom function into the sparse training callback:</p>
+<div class="highlight"><pre><span></span><span class="n">DynamicSparseTrainingCallback</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">grow_score_f</span><span class="o">=</span><span class="n">custom_grow_scoring_function</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Replication-Results">Replication Results<a class="anchor-link" href="#Replication-Results"> </a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In machine learning, is very easy for seemingly insignificant differences in algorithmic implementation to have a noticeable impact on final results. Therefore, this section compares results from this implementation to results reported in published papers.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>TODO...</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Under-The-Hood-Details">Under-The-Hood Details<a class="anchor-link" href="#Under-The-Hood-Details"> </a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Here's what's going on.</p>
+<p>When you run <code>sparsify_model(learn.model, 0.9)</code>, this adds sparse masks and add pre_forward hooks to enforce masks on weights during forward pass.</p>
+<blockquote><p>By default, a uniform sparsity distribution is used. Change the sparsity distribution to Erdos-Renyi with <code>sparsify_model(learn.model, 0.9, sparse_init_f=erdos_renyi)</code>, or pass in your custom function (see <a href="#Customization">Customization</a></p>
+<p>To avoid adding pre_forward hooks, use <code>sparsify_model(learn.model, 0.9, enforce_masks=False)</code>.</p>
+</blockquote>
+<p>When you add the <a href="/fastsparse/core.html#DynamicSparseTrainingCallback"><code>DynamicSparseTrainingCallback</code></a> callback, ... TODO complete section</p>
 
 </div>
 </div>

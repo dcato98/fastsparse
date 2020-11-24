@@ -18,7 +18,7 @@ This network implements the following sparse algorithms:
 | :- | :- | :- | :- |
 |  | static sparsity baseline | omit `DynamicSparseTrainingCallback` |  |
 | SET | [Sparse Evolutionary Training](https://arxiv.org/abs/1901.09181) (Jan 2019) | `DynamicSparseTrainingCallback(**SET_presets)` |  |
-| SNFS | [Sparse Networks From Scratch](https://arxiv.org/abs/1907.04840) (Jul 2019) | `DynamicSparseTrainingCallback(**SNFS_presets)` | redistribution not implemented* |
+| SNFS | [Sparse Networks From Scratch](https://arxiv.org/abs/1907.04840) (Jul 2019) | `DynamicSparseTrainingCallback(**SNFS_presets)` | \*redistribution not implemented |
 | RigL | [Rigged Lottery](https://arxiv.org/abs/1911.11134) (Nov 2019) | `DynamicSparseTrainingCallback(**RigL_presets)` |  |
 
 \*Authors of the RigL paper demonstrate that using SNFS + Erdos-Renyi-Kernel distribution - redistribution outperforms SNFS + uniform sparsity + redistribution (at least on the measured benchmarks).
@@ -115,37 +115,37 @@ save_model('sparse_tiny_mnist', learn.model, learn.opt)
   <tbody>
     <tr>
       <td>0</td>
-      <td>0.482798</td>
-      <td>0.698934</td>
+      <td>0.334119</td>
+      <td>0.679619</td>
       <td>0.505007</td>
-      <td>00:02</td>
+      <td>00:03</td>
     </tr>
     <tr>
       <td>1</td>
-      <td>0.302442</td>
-      <td>0.656283</td>
-      <td>0.512160</td>
-      <td>00:01</td>
+      <td>0.271645</td>
+      <td>0.555170</td>
+      <td>0.848355</td>
+      <td>00:02</td>
     </tr>
     <tr>
       <td>2</td>
-      <td>0.238623</td>
-      <td>0.175693</td>
-      <td>0.935622</td>
+      <td>0.237115</td>
+      <td>0.072088</td>
+      <td>0.978541</td>
       <td>00:02</td>
     </tr>
     <tr>
       <td>3</td>
-      <td>0.203908</td>
-      <td>0.028619</td>
-      <td>0.992847</td>
+      <td>0.220553</td>
+      <td>0.044927</td>
+      <td>0.987124</td>
       <td>00:02</td>
     </tr>
     <tr>
       <td>4</td>
-      <td>0.162143</td>
-      <td>0.033945</td>
-      <td>0.989986</td>
+      <td>0.174585</td>
+      <td>0.006496</td>
+      <td>1.000000</td>
       <td>00:02</td>
     </tr>
   </tbody>
@@ -186,7 +186,7 @@ sparse_hooks.remove()
 
 
 
-    validation loss: 0.033944640308618546, validation accuracy: 0.9899857044219971
+    validation loss: 0.006496043410152197, validation accuracy: 1.0
 
 
 ### Training with Large Batch Sizes

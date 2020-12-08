@@ -2,10 +2,10 @@
 
 __all__ = ['sparse_mask', 'sparse_mask_like', 'mask_from_tensor', 'sparsity_from_tensor', 'maybe_float',
            'sparse_params', 'apply_masks', 'is_sparseable_module', 'sparseable_modules', 'mask_from_tensor',
-           'sparsity_from_tensor', 'uniform_sparsity', 'first_layer_dense_uniform', 'erdos_renyi_sparsity',
-           'sparsify_model', 'random_score', 'weight_magnitude', 'gradient_magnitude', 'gradient_momentum',
-           'momentum_redistribution', 'top_k_mask', 'DynamicSparseTrainingCallback', 'SET_presets', 'SNFS_presets',
-           'RigL_presets']
+           'sparsity_from_tensor', 'init_kaiming_normal_sparse_', 'uniform_sparsity', 'first_layer_dense_uniform',
+           'erdos_renyi_sparsity', 'sparsify_model', 'random_score', 'weight_magnitude', 'gradient_magnitude',
+           'gradient_momentum', 'momentum_redistribution', 'top_k_mask', 'DynamicSparseTrainingCallback', 'SET_presets',
+           'SNFS_presets', 'RigL_presets']
 
 # Cell
 import numpy as np
@@ -76,6 +76,36 @@ def sparseable_modules(model, additional_types=[]):
 # Cell
 def mask_from_tensor(t): return t != 0
 def sparsity_from_tensor(t): return 1 - mask_from_tensor(t).sum() / t.numel()
+
+# Cell
+@torch.no_grad()
+def init_kaiming_normal_sparse_(t, a=0, mode='fan_in', sparse_mode='fan_in_out', nonlinearity='leaky_relu'):
+    '''A modified kaiming normal initialization which adjusts for sparsity in weights.'''
+    # calculate sparse adjustment to standard deviation
+    #  dense kaiming init = mode / sqrt(dense_fan), e.g. for relu = 2 / sqrt(dense_fan)
+    #  sparse kaiming init = mode / sqrt(sparse_fan), note: sparse fan is unique to each input/output
+    #                      = (dense kaiming init) * sqrt(dense_fan / sparse_fan)
+    mask = mask_from_tensor(t)
+    mode = mode if mask.sum() == t.numel() else sparse_mode
+    mode_ix = ['fan_in', 'fan_out', 'fan_in_out'].index(mode)
+    dim = [1,0,1][mode_ix]
+
+    dense_fan = t.shape[dim] * t[0][0].numel()
+
+    sparse_fan_in = mask.sum(1, keepdim=True)
+    sparse_fan_out = mask.sum(0, keepdim=True)
+    # variance of 'fan_in_out' is harmonic mean of 'fan_in' and 'fan_out'
+    sparse_fan_in_out = (sparse_fan_in + sparse_fan_out) / 2
+
+    sparse_fan = [sparse_fan_in, sparse_fan_out, sparse_fan_in_out][mode_ix]
+    sparse_fan[sparse_fan==0] = 1 # avoid div by 0, can set to anything since these are masked
+
+    std_adj = torch.sqrt(dense_fan / sparse_fan)
+
+    # initialize as dense, then apply mask and apply sparse adjustment
+    mode = 'fan_in' if mode == 'fan_in_out' else mode
+    nn.init.kaiming_normal_(t, a=a, mode=mode, nonlinearity=nonlinearity)
+    return t.mul_(mask).mul_(std_adj)
 
 # Cell
 def uniform_sparsity(params, model_sparsity):
@@ -151,12 +181,16 @@ def erdos_renyi_sparsity(params, model_sparsity, include_kernel=True, erk_power_
 
 # Cell
 @torch.no_grad()
-def sparsify_model(model, model_sparsity, sparse_f=uniform_sparsity, enforce_mask=True):
+def sparsify_model(model, model_sparsity, sparse_f=uniform_sparsity,
+                   sparse_init_mode=None, enforce_mask=True):
     '''
     Adds a sparse mask for each sparseable-module weight in model and applies mask to weights.
 
     `sparse_f`: per RigL paper, `uniform_sparsity` has fewer FLOPs, `erdos_renyi_sparsity`
     results in better model.
+
+    `sparse_init_mode`: initialization mode of sparse modules, or no initialization if None.
+    Possible values: [None, 'fan_in', 'fan_out', 'fan_in_out']
 
     If `enforce_mask` is True, a forward_pre_hook will be registered to each module
     to apply the weight mask before every forward pass of the module.
@@ -177,6 +211,10 @@ def sparsify_model(model, model_sparsity, sparse_f=uniform_sparsity, enforce_mas
             m.register_buffer('weight_mask', mask)
             m.register_buffer('weight_sparsity', tensor(s))
             apply_masks(m)
+            if sparse_init_mode is not None:
+                init_f = partial(init_kaiming_normal_sparse_, sparse_mode=sparse_init_mode)
+                init_default(m, func=init_f)
+                apply_masks(m)
             if enforce_mask:
                 h = m.register_forward_pre_hook(apply_masks)
                 hooks.hooks.append(h)

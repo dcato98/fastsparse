@@ -25,7 +25,11 @@ index = {"sparse_mask": "00_core.ipynb",
          "DynamicSparseTrainingCallback": "00_core.ipynb",
          "SET_presets": "00_core.ipynb",
          "SNFS_presets": "00_core.ipynb",
-         "RigL_presets": "00_core.ipynb"}
+         "RigL_presets": "00_core.ipynb",
+         "flop_counter_hook": "00_core.ipynb",
+         "sparse_flop_counter_hook": "00_core.ipynb",
+         "count_flops": "00_core.ipynb",
+         "FlopsCounter": "00_core.ipynb"}
 
 modules = ["core.py"]
 

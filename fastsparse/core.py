@@ -5,7 +5,8 @@ __all__ = ['sparse_mask', 'sparse_mask_like', 'mask_from_tensor', 'sparsity_from
            'sparsity_from_tensor', 'init_kaiming_normal_sparse_', 'uniform_sparsity', 'first_layer_dense_uniform',
            'erdos_renyi_sparsity', 'sparsify_model', 'random_score', 'weight_magnitude', 'gradient_magnitude',
            'gradient_momentum', 'momentum_redistribution', 'top_k_mask', 'DynamicSparseTrainingCallback', 'SET_presets',
-           'SNFS_presets', 'RigL_presets']
+           'SNFS_presets', 'RigL_presets', 'flop_counter_hook', 'sparse_flop_counter_hook', 'count_flops',
+           'FlopsCounter']
 
 # Cell
 import numpy as np
@@ -456,3 +457,53 @@ SNFS_presets = {'redistribute_f':momentum_redistribution,
 # Cell
 RigL_presets = {'keep_score_f': weight_magnitude, 'grow_score_f': gradient_magnitude,
                 'initial_drop_grow_pct':0.3, 'stop_pct':0.75, 'batches_per_update': 100}
+
+# Cell
+def flop_counter_hook(m, i, o):
+    '''Supported modules: nn.Conv2d, nn.Linear'''
+    flops = 0
+    if isinstance(m, nn.Conv2d):
+        bs,ch,h,w = i[0].shape
+        sx, sy = m.stride
+        flops = bs * h * w * m.weight.numel() / (sx * sy)
+    elif isinstance(m, nn.Linear):
+        bs = np.prod(i[0].shape[:-1])
+        flops = bs * m.weight.numel()
+    else:
+        return 0
+    return flops
+
+def sparse_flop_counter_hook(m, i, o):
+    density = 1 - float(m.weight_sparsity) if hasattr(m, 'weight_sparsity') else 1
+    dense_flops = flop_counter_hook(m, i, o)
+    return int(density * dense_flops)
+
+def count_flops(model, xb, sparse=False):
+    flops = 0
+    hook = sparse_flop_counter_hook if sparse else flop_counter_hook
+    with Hooks(flatten_model(model), hook) as h:
+        model(xb)
+        flops = sum(h.stored)
+    return flops
+
+# Cell
+class FlopsCounter(HookCallback):
+    def __init__(self, sparse=True, verbose=False, **kwargs):
+        super().__init__(**kwargs)
+        store_attr('sparse,verbose')
+    def hook(self, m, i, o):
+        f = sparse_flop_counter_hook if self.sparse else flop_counter_hook
+        return f(m, i, o)
+    def before_fit(self):
+        if not hasattr(self, 'm2flops'): self.m2flops = defaultdict(int)
+        super().before_fit()
+    def after_batch(self):
+        "Take the stored results and puts it in `self.m2flops`"
+        if self.training and (self.every is None or self.train_iter%self.every == 0):
+            for m, flops in zip(self.modules, self.hooks.stored):
+                self.m2flops[m] += flops
+        super().after_batch()
+    def after_fit(self):
+        if self.verbose: print(f'Training FLOPs: {self.train_flops()}')
+        super().after_fit()
+    def train_flops(self): return sum(self.m2flops.values())

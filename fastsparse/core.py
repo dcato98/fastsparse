@@ -460,12 +460,12 @@ RigL_presets = {'keep_score_f': weight_magnitude, 'grow_score_f': gradient_magni
 
 # Cell
 def flop_counter_hook(m, i, o):
-    '''Supported modules: nn.Conv2d, nn.Linear'''
+    '''Counts FLOPs from nn.Linear and nn.ConvNd layers'''
     flops = 0
-    if isinstance(m, nn.Conv2d):
-        bs,ch,h,w = i[0].shape
+    if isinstance(m, (nn.Conv1d, nn.Conv2d, nn.Conv3d)):
+        bs,ch,*ks = i[0].shape
         sx, sy = m.stride
-        flops = bs * h * w * m.weight.numel() / (sx * sy)
+        flops = bs * np.prod(ks) * m.weight.numel() / (sx * sy)
     elif isinstance(m, nn.Linear):
         bs = np.prod(i[0].shape[:-1])
         flops = bs * m.weight.numel()
@@ -474,7 +474,8 @@ def flop_counter_hook(m, i, o):
     return flops
 
 def sparse_flop_counter_hook(m, i, o):
-    density = 1 - float(m.weight_sparsity) if hasattr(m, 'weight_sparsity') else 1
+    '''Counts FLOPs from nonzero-valued weights.'''
+    density = m.weight.abs().gt(0).sum() / m.weight.numel() if hasattr(m, 'weight') else 1
     dense_flops = flop_counter_hook(m, i, o)
     return int(density * dense_flops)
 
@@ -504,6 +505,6 @@ class FlopsCounter(HookCallback):
                 self.m2flops[m] += flops
         super().after_batch()
     def after_fit(self):
-        if self.verbose: print(f'Training FLOPs: {self.train_flops()}')
+        if self.verbose: print(f'Training FLOPs (forward pass only): {self.fwd_train_flops()}')
         super().after_fit()
-    def train_flops(self): return sum(self.m2flops.values())
+    def fwd_train_flops(self): return sum(self.m2flops.values())
